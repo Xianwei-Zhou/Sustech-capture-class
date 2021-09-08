@@ -1,25 +1,31 @@
 import re
 from getpass import getpass
 from requests import session
+import time
+import threading
 
+t = time.localtime(time.time())
+xuenian = (str(t.tm_year) + '-' + str(t.tm_year + 1)) if t.tm_mon > 6 or (t.tm_mon == 6 and t.tm_mday > 15) else (
+        str(t.tm_year - 1) + '-' + str(t.tm_year))
+xueqi = 1 if t.tm_mon > 6 or (t.tm_mon == 6 and t.tm_mday > 15) else 2 if t.tm_mon < 5 else 3
 data = {
-    'p_pylx': 1,
-    'p_xn': '2021-2022',
-    'p_xq': 1,
-    'p_xnxq': '2021-20221',
-    'p_xktjz': 'rwtjzyx'
+    'p_pylx': 1,  # 培养类型？ 不懂
+    'p_xn': xuenian,
+    'p_xq': xueqi,
+    'p_xnxq': xuenian + str(xueqi),
+    'p_xktjz': 'rwtjzyx'  # 任务提交至已选
 }
 classType = ['bxxk', 'xxxk', 'kzyxk', 'zynknjxk']
 session = session()
-student_id = '11910000'
+student_id = '11911224'
 password = ''
 classList = []
 
 
 def queryClass(className):
     data1 = {
-        "p_xn": data['p_xn'],
-        "p_xq": data['p_xq'],
+        "p_xn": xuenian,
+        "p_xq": xueqi,
         "p_xnxq": data['p_xnxq'],
         "p_chaxunpylx": 3,
         "mxpylx": 3,
@@ -77,12 +83,15 @@ def logIn():
     return 1
 
 
+i = 0  # 抢课次数
+
+
 def capture():
-    i = 0
     while True:
+        global i
+        print('这是第{}次抢课'.format(i))
+        i += 1
         for classData in classList:
-            print('这是第{}次抢课'.format(i))
-            i += 1
             r = session.post('https://tis.sustech.edu.cn/Xsxk/addGouwuche', data=classData)
             print(r.text)
 
@@ -92,7 +101,8 @@ def main():
     while logIn() == 0:
         pass
     config()
-    capture()
+    for k in range(15):
+        threading.Thread(target=capture).start()
     session.close()
 
 
