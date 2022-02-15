@@ -72,14 +72,19 @@ def logIn():
         'execution': '',
         '_eventId': 'submit'
     }
-    response = session.get('https://tis.sustech.edu.cn/cas', headers=headers)
+    try:
+        response = session.get('https://tis.sustech.edu.cn/cas', headers=headers)
 
-    data['execution'] = re.findall('execution" value="(.+?)"', response.text)[0]
-    response = session.post('https://cas.sustech.edu.cn/cas/login?service=https%3A%2F%2Ftis.sustech.edu.cn%2Fcas',
-                            data=data,
-                            headers=headers)
-    if '认证信息无效' in response.text:
-        return 0
+        data['execution'] = re.findall('execution" value="(.+?)"', response.text)[0]
+        response = session.post('https://cas.sustech.edu.cn/cas/login?service=https%3A%2F%2Ftis.sustech.edu.cn%2Fcas',
+                                data=data,
+                                headers=headers)
+        if '认证信息无效' in response.text:
+            return 0
+        print("cas验证通过")
+    except Exception as e:
+        print("something wrong in login")
+        print(e)
     return 1
 
 
@@ -88,18 +93,22 @@ i = 0  # 抢课次数
 
 def capture():
     while True:
-        global i
+        global i, r
         print('这是第{}次抢课'.format(i))
         i += 1
         for classData in classList:
-            r = session.post('https://tis.sustech.edu.cn/Xsxk/addGouwuche', data=classData)
+            try:
+                r = session.post('https://tis.sustech.edu.cn/Xsxk/addGouwuche', data=classData)
+            except Exception as e:
+                print(e)
             print(r.text)
 
 
 def main():
     print('如果程序出现bug建议重启此脚本')
     while logIn() == 0:
-        pass
+        print("cas验证失败，请重新验证")
+        time.sleep(0.1)
     config()
     for k in range(15):
         threading.Thread(target=capture).start()
